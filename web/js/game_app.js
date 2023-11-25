@@ -2,8 +2,12 @@ class GameApp {
     /** @type Application */
     app;
 
+    inputs = new Input();
+
     /** @type HTMLDivElement */
     debugDiv;
+
+    updateSubscribers = {};
 
     scenes = {};
     activeScene = "";
@@ -17,7 +21,7 @@ class GameApp {
             resizeTo: window,
         });
         document.body.appendChild(this.app.view);
-        this.app.renderer.backgroundColor = 0;
+        this.app.renderer.backgroundColor = 0x444444;
 
         //PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
@@ -25,6 +29,10 @@ class GameApp {
         this.app.renderer.view.style.display = 'block';
 
         this.initDebugText();
+
+        this.app.ticker.add(() => {
+            this.sendUpdateEvent();
+        });
     }
 
     initDebugText() {
@@ -40,7 +48,7 @@ class GameApp {
 
     WH() {
         const s = this.app.screen;
-        return [s.width, s.height];
+        return {w: s.width, h: s.height};
     }
 
     SetDebugText(text) {
@@ -74,5 +82,25 @@ class GameApp {
         this.activeScene = sceneName;
 
         scene.show();
+    }
+
+    SubscribeForUpdate(cb) {
+        this.updateSubscribers[cb] = cb;
+    }
+
+    UnsubscribeForUpdate(cb) {
+        delete this.updateSubscribers[cb];
+    }
+
+    sendUpdateEvent() {
+        const delta = this.app.ticker.elapsedMS / 1000;
+
+        for (let key in this.updateSubscribers) {
+            if (!this.updateSubscribers.hasOwnProperty(key)) {
+                continue;
+            }
+            //console.log(key, typeof this.updateSubscribers[key]);
+            this.updateSubscribers[key](delta);
+        }
     }
 }
